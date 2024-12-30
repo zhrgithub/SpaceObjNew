@@ -64,6 +64,11 @@
             <version>3.0.4</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>1.18.36</scope>
+        </dependency>
     </dependencies>
 
     <build>
