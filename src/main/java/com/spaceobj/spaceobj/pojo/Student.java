@@ -23,4 +23,6 @@ public class Student implements Serializable {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:ss:mm")
     private LocalDateTime updatedAt;
+
+
 }
