@@ -24,4 +24,16 @@
         select * from students where student_id = #{studentId}
     </select>
 
+    <!-- 根据条件查询学生 -->
+    <select id="findByCondition" resultMap="studentResultMap">
+        SELECT * FROM students
+        WHERE 1=1
+        <if test="name != null and name != ''">
+            AND (first_name LIKE CONCAT('%', #{name}, '%') OR last_name LIKE CONCAT('%', #{name}, '%'))
+        </if>
+        <if test="age != null">
+            AND EXTRACT(YEAR FROM age(birthdate)) = #{age}
+        </if>
+    </select>
+
 </mapper>

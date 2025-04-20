@@ -13,3 +13,8 @@ mybatis:
       map-underscore-to-camel-case: true            # 支持驼峰命名转换
 server:
   port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+            include: beans
