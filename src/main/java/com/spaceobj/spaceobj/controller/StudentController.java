@@ -26,9 +26,6 @@ public class StudentController {
     @ResponseBody
     public List<Student> getAllStudents() {
         List<Student> students = studentService.getAllStudents();
-        students.remove(0);
-        students.remove(1);
-        students.remove(2);
         return students;
     }
 
@@ -36,6 +33,7 @@ public class StudentController {
 
     // 根据ID获取单个学生信息
     @GetMapping("/{id}")
+    @ResponseBody
     public Student getStudentById(@PathVariable Long id) {
         return studentService.getStudentById(id);
     }
