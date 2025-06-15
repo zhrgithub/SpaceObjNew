@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>简单聊天系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #chat-messages {
+            height: 400px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+            background-color: #fafafa;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            background-color: #e3f2fd;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .input-group button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .input-group button:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .group-controls {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 简化版实时聊天系统</h1>
+        
+        <div id="status" class="status disconnected">未连接</div>
+        
+        <!-- 用户信息 -->
+        <div class="input-group">
+            <input type="number" id="student-id" placeholder="学生ID" value="1">
+            <input type="text" id="student-name" placeholder="学生姓名" value="张三">
+            <button onclick="connect()">连接</button>
+            <button onclick="disconnect()">断开</button>
+        </div>
+        
+        <!-- 群组控制 -->
+        <div class="group-controls">
+            <h3>群组管理</h3>
+            <div class="input-group">
+                <input type="text" id="group-id" placeholder="群组ID" value="group_123">
+                <button onclick="joinGroup()">加入群组</button>
+                <button onclick="leaveGroup()">离开群组</button>
+            </div>
+        </div>
+        
+        <!-- 消息显示区域 -->
+        <div id="chat-messages"></div>
+        
+        <!-- 发送消息 -->
+        <div class="input-group">
+            <input type="number" id="target-id" placeholder="私聊对象ID（群聊留空）">
+            <input type="text" id="message-input" placeholder="输入消息..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">发送</button>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 10px; background-color: #e9ecef; border-radius: 5px;">
+            <h4>使用说明：</h4>
+            <ul>
+                <li>输入学生ID和姓名，点击"连接"建立WebSocket连接</li>
+                <li>私聊：在"私聊对象ID"中输入目标学生ID，发送消息</li>
+                <li>群聊：先加入群组，然后清空"私聊对象ID"发送消息</li>
+                <li>可以打开多个页面，用不同学生ID测试聊天功能</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        class SimpleChat {
+            constructor() {
+                this.ws = null;
+                this.studentId = null;
+                this.studentName = null;
+            }
+            
+            connect(studentId, studentName) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.disconnect();
+                }
+                
+                this.studentId = studentId;
+                this.studentName = studentName;
+                
+                this.ws = new WebSocket(`ws://localhost:8080/ws/chat?studentId=${studentId}`);
+                
+                this.ws.onopen = () => {
+                    console.log('WebSocket连接成功');
+                    this.updateStatus('已连接', true);
+                    // 发送连接消息
+                    this.send({
+                        type: 'CONNECT',
+                        studentId: this.studentId,
+                        studentName: this.studentName
+                    });
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    this.handleMessage(message);
+                };
+                
+                this.ws.onclose = () => {
+                    console.log('WebSocket连接断开');
+                    this.updateStatus('连接断开', false);
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket错误:', error);
+                    this.updateStatus('连接错误', false);
+                };
+            }
+            
+            disconnect() {
+                if (this.ws) {
+                    this.ws.close();
+                    this.ws = null;
+                }
+                this.updateStatus('未连接', false);
+            }
+            
+            // 发送私聊消息
+            sendPrivateMessage(targetStudentId, content) {
+                this.send({
+                    type: 'PRIVATE_MESSAGE',
+                    targetStudentId: targetStudentId,
+                    content: content,
+                    senderId: this.studentId,
+                    senderName: this.studentName
+                });
+            }
+            
+            // 发送群聊消息
+            sendGroupMessage(groupId, content) {
+                this.send({
+                    type: 'GROUP_MESSAGE',
+                    groupId: groupId,
+                    content: content,
+                    senderId: this.studentId,
+                    senderName: this.studentName
+                });
+            }
+            
+            // 加入群聊
+            joinGroup(groupId) {
+                this.send({
+                    type: 'JOIN_GROUP',
+                    groupId: groupId,
+                    studentId: this.studentId
+                });
+            }
+            
+            // 离开群聊
+            leaveGroup(groupId) {
+                this.send({
+                    type: 'LEAVE_GROUP',
+                    groupId: groupId,
+                    studentId: this.studentId
+                });
+            }
+            
+            handleMessage(message) {
+                switch (message.type) {
+                    case 'CONNECT_SUCCESS':
+                        console.log('连接确认:', message);
+                        this.displaySystemMessage('连接成功');
+                        break;
+                    case 'PRIVATE_MESSAGE':
+                        console.log('收到私聊:', message);
+                        this.displayPrivateMessage(message);
+                        break;
+                    case 'GROUP_MESSAGE':
+                        console.log('收到群聊:', message);
+                        this.displayGroupMessage(message);
+                        break;
+                    case 'JOIN_GROUP_SUCCESS':
+                        console.log('成功加入群组:', message.groupId);
+                        this.displaySystemMessage(`成功加入群组: ${message.groupId}`);
+                        break;
+                    case 'LEAVE_GROUP_SUCCESS':
+                        console.log('成功离开群组:', message.groupId);
+                        this.displaySystemMessage(`成功离开群组: ${message.groupId}`);
+                        break;
+                    case 'ERROR':
+                        console.error('服务器错误:', message.message);
+                        this.displayErrorMessage('错误: ' + message.message);
+                        break;
+                    default:
+                        console.log('未知消息类型:', message);
+                }
+            }
+            
+            displayPrivateMessage(message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.innerHTML = `<strong>[私聊] ${message.senderName}:</strong> ${message.content}`;
+                this.appendMessage(messageDiv);
+            }
+            
+            displayGroupMessage(message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.innerHTML = `<strong>[群聊-${message.groupId}] ${message.senderName}:</strong> ${message.content}`;
+                this.appendMessage(messageDiv);
+            }
+            
+            displaySystemMessage(content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.style.backgroundColor = '#d4edda';
+                messageDiv.innerHTML = `<strong>[系统]:</strong> ${content}`;
+                this.appendMessage(messageDiv);
+            }
+            
+            displayErrorMessage(content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.style.backgroundColor = '#f8d7da';
+                messageDiv.innerHTML = `<strong>[错误]:</strong> ${content}`;
+                this.appendMessage(messageDiv);
+            }
+            
+            appendMessage(messageDiv) {
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            updateStatus(text, connected) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.textContent = text;
+                statusDiv.className = `status ${connected ? 'connected' : 'disconnected'}`;
+            }
+            
+            send(data) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(data));
+                } else {
+                    this.displayErrorMessage('WebSocket未连接');
+                }
+            }
+        }
+
+        // 全局聊天实例
+        const chat = new SimpleChat();
+
+        // 页面操作函数
+        function connect() {
+            const studentId = parseInt(document.getElementById('student-id').value);
+            const studentName = document.getElementById('student-name').value;
+            
+            if (!studentId || !studentName) {
+                alert('请输入学生ID和姓名');
+                return;
+            }
+            
+            chat.connect(studentId, studentName);
+        }
+
+        function disconnect() {
+            chat.disconnect();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const targetId = document.getElementById('target-id').value;
+            const groupId = document.getElementById('group-id').value;
+            
+            if (!input.value.trim()) {
+                alert('请输入消息内容');
+                return;
+            }
+            
+            if (targetId) {
+                // 私聊
+                chat.sendPrivateMessage(parseInt(targetId), input.value);
+            } else if (groupId) {
+                // 群聊
+                chat.sendGroupMessage(groupId, input.value);
+            } else {
+                alert('请指定私聊对象ID或确保已加入群组');
+                return;
+            }
+            
+            input.value = '';
+        }
+
+        function joinGroup() {
+            const groupId = document.getElementById('group-id').value;
+            if (!groupId) {
+                alert('请输入群组ID');
+                return;
+            }
+            chat.joinGroup(groupId);
+        }
+
+        function leaveGroup() {
+            const groupId = document.getElementById('group-id').value;
+            if (!groupId) {
+                alert('请输入群组ID');
+                return;
+            }
+            chat.leaveGroup(groupId);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+    </script>
+</body>
+</html> 
