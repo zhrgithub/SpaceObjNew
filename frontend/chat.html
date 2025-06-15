@@ -116,30 +116,67 @@
         .message {
             margin: 8px 0;
             padding: 10px;
-            border-radius: 6px;
+            border-radius: 12px;
             word-wrap: break-word;
+            max-width: 70%;
+            position: relative;
+            clear: both;
         }
         
-        .message-private {
+        .message-sent {
+            float: right;
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+            margin-right: 0;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message-received {
+            float: left;
+            background: #f1f1f1;
+            color: #333;
+            margin-left: 0;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-private.message-sent {
+            background: #2196F3;
+        }
+        
+        .message-private.message-received {
             background: #e3f2fd;
-            border-left: 4px solid #2196F3;
+            color: #333;
         }
         
-        .message-group {
+        .message-group.message-sent {
+            background: #4CAF50;
+        }
+        
+        .message-group.message-received {
             background: #e8f5e8;
-            border-left: 4px solid #4CAF50;
+            color: #333;
         }
         
         .message-system {
             background: #f5f5f5;
             border-left: 4px solid #666;
             font-style: italic;
+            float: none;
+            max-width: 100%;
+            margin: 8px auto;
+            text-align: center;
         }
         
         .message-history {
             opacity: 0.8;
             background: #f9f9f9 !important;
-            border-left-color: #ccc !important;
+            color: #666 !important;
+            float: none !important;
+            max-width: 100% !important;
+            margin: 4px auto !important;
+            text-align: center;
         }
         
         .message-history .message-time {
@@ -148,13 +185,30 @@
         }
         
         .message-time {
-            font-size: 0.8em;
-            color: #666;
+            font-size: 0.75em;
+            color: rgba(255,255,255,0.8);
             margin-bottom: 5px;
         }
         
+        .message-received .message-time {
+            color: #666;
+        }
+        
         .message-content {
-            color: #333;
+            line-height: 1.4;
+        }
+        
+        .message-sender {
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 3px;
+            opacity: 0.9;
+        }
+        
+        .messages::after {
+            content: "";
+            display: table;
+            clear: both;
         }
         
         .input-area {
@@ -261,8 +315,10 @@
         </div>
         
         <div class="connect-area">
-            <input type="number" id="studentId" placeholder="学生ID" value="1">
-            <input type="text" id="studentName" placeholder="学生姓名" value="张三">
+            <select id="userSelect" style="padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; min-width: 200px;">
+                <option value="">选择用户身份</option>
+            </select>
+            <button id="loadUsersBtn" class="btn-success" onclick="loadConnectUserList()">刷新用户列表</button>
             <button id="connectBtn" class="btn-primary" onclick="connect()">连接</button>
             <button id="disconnectBtn" class="btn-secondary" onclick="disconnect()" disabled>断开</button>
         </div>
@@ -295,7 +351,9 @@
                     <div class="input-controls">
                         <label><input type="radio" name="chatType" value="private" checked> 私聊</label>
                         <label><input type="radio" name="chatType" value="group"> 群聊</label>
-                        <input type="number" id="targetId" class="target-input" placeholder="对象ID">
+                        <select id="targetId" class="target-input">
+                            <option value="">选择用户</option>
+                        </select>
                         <select id="targetGroup" class="target-input" style="display:none;">
                             <option value="">选择群组</option>
                         </select>
@@ -314,12 +372,24 @@
         let currentUser = null;
         let joinedGroups = new Set();
         
+        // 页面加载完成后自动加载用户列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConnectUserList();
+        });
+        
         // 切换聊天类型
         document.querySelectorAll('input[name="chatType"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 const isPrivate = this.value === 'private';
                 document.getElementById('targetId').style.display = isPrivate ? 'inline' : 'none';
                 document.getElementById('targetGroup').style.display = isPrivate ? 'none' : 'inline';
+                
+                // 根据选择的类型加载对应的列表
+                if (isPrivate) {
+                    loadUserList();
+                } else {
+                    loadGroupList();
+                }
             });
         });
         
@@ -331,11 +401,19 @@
         });
         
         function connect() {
-            const studentId = document.getElementById('studentId').value;
-            const studentName = document.getElementById('studentName').value;
+            const userSelect = document.getElementById('userSelect');
+            const selectedValue = userSelect.value;
+            
+            if (!selectedValue) {
+                alert('请选择用户身份');
+                return;
+            }
+            
+            // 解析选中的用户信息 (格式: "id|name")
+            const [studentId, studentName] = selectedValue.split('|');
             
             if (!studentId || !studentName) {
-                alert('请输入学生ID和姓名');
+                alert('用户信息格式错误，请重新选择');
                 return;
             }
             
@@ -357,6 +435,9 @@
                         studentId: currentUser.id,
                         studentName: currentUser.name
                     });
+                    
+                    // 连接成功后加载聊天对象列表（默认是私聊模式）
+                    loadUserList();
                 };
                 
                 ws.onmessage = function(event) {
@@ -479,20 +560,20 @@
                 case 'PRIVATE_MESSAGE':
                     if (message.isSender) {
                         // 发送者看到的消息
-                        addMessage(`[私聊给 ${message.targetId}] ${message.senderName}`, message.content, 'private');
+                        addMessage(`私聊给 ${message.targetId}`, message.content, 'private', true);
                     } else {
                         // 接收者看到的消息
-                        addMessage(`[私聊] ${message.senderName}`, message.content, 'private');
+                        addMessage(`${message.senderName}`, message.content, 'private', false);
                     }
                     break;
                     
                 case 'GROUP_MESSAGE':
                     if (message.isSender) {
                         // 发送者看到的消息
-                        addMessage(`[${message.groupId}] ${message.senderName}`, message.content, 'group');
+                        addMessage(`${message.groupId}`, message.content, 'group', true);
                     } else {
                         // 其他群成员看到的消息
-                        addMessage(`[${message.groupId}] ${message.senderName}`, message.content, 'group');
+                        addMessage(`${message.senderName} @ ${message.groupId}`, message.content, 'group', false);
                     }
                     break;
                     
@@ -503,7 +584,13 @@
                 case 'GROUP_HISTORY_MESSAGE':
                     // 显示历史消息，添加时间戳
                     const historyTime = new Date(message.timestamp).toLocaleString();
-                    addHistoryMessage(`[${message.groupId}] ${message.senderName}`, message.content, 'group', historyTime);
+                    // 群组历史消息需要判断是否是当前用户发送的
+                    const isCurrentUserSent = currentUser && message.senderId === currentUser.id;
+                    if (isCurrentUserSent) {
+                        addHistoryMessage(`${message.groupId}`, message.content, 'group', historyTime, true);
+                    } else {
+                        addHistoryMessage(`${message.senderName} @ ${message.groupId}`, message.content, 'group', historyTime, false);
+                    }
                     break;
                     
                 case 'GROUP_HISTORY_END':
@@ -518,9 +605,9 @@
                     // 显示私聊历史消息，添加时间戳
                     const privateHistoryTime = new Date(message.timestamp).toLocaleString();
                     if (message.isSender) {
-                        addHistoryMessage(`[私聊给 ${message.targetId}] 我`, message.content, 'private', privateHistoryTime);
+                        addHistoryMessage(`私聊给 ${message.targetId}`, message.content, 'private', privateHistoryTime, true);
                     } else {
-                        addHistoryMessage(`[私聊] ${message.senderName}`, message.content, 'private', privateHistoryTime);
+                        addHistoryMessage(`${message.senderName}`, message.content, 'private', privateHistoryTime, false);
                     }
                     break;
                     
@@ -547,31 +634,46 @@
             }
         }
         
-        function addMessage(sender, content, type) {
+        function addMessage(sender, content, type, isSent = false) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message message-${type}`;
+            
+            // 根据是否是发送者添加不同的CSS类
+            if (type === 'system') {
+                messageDiv.className = `message message-${type}`;
+            } else {
+                const alignClass = isSent ? 'message-sent' : 'message-received';
+                messageDiv.className = `message message-${type} ${alignClass}`;
+            }
             
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
             
-            messageDiv.innerHTML = `
-                <div class="message-time">${timeStr} - ${sender}</div>
-                <div class="message-content">${escapeHtml(content)}</div>
-            `;
+            if (type === 'system') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">${escapeHtml(content)}</div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-sender">${escapeHtml(sender)}</div>
+                    <div class="message-content">${escapeHtml(content)}</div>
+                    <div class="message-time">${timeStr}</div>
+                `;
+            }
             
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
         
-        function addHistoryMessage(sender, content, type, timestamp) {
+        function addHistoryMessage(sender, content, type, timestamp, isSent = false) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message message-${type} message-history`;
             
             messageDiv.innerHTML = `
-                <div class="message-time">${timestamp} - ${sender} (历史)</div>
+                <div class="message-sender">${escapeHtml(sender)} (历史)</div>
                 <div class="message-content">${escapeHtml(content)}</div>
+                <div class="message-time">${timestamp}</div>
             `;
             
             messagesDiv.appendChild(messageDiv);
@@ -620,6 +722,81 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        // 加载用户列表
+        function loadUserList() {
+            fetch('http://localhost:8080/api/chat/users')
+                .then(response => response.json())
+                .then(data => {
+                    const targetSelect = document.getElementById('targetId');
+                    targetSelect.innerHTML = '<option value="">选择用户</option>';
+                    
+                    if (data.code === 200 && data.data) {
+                        data.data.forEach(user => {
+                            // 过滤掉当前用户自己
+                            if (currentUser && user.studentId !== currentUser.id) {
+                                const option = document.createElement('option');
+                                option.value = user.studentId;
+                                const userName = (user.firstName || '') + (user.lastName || '') || `用户${user.studentId}`;
+                                option.textContent = `${userName} (ID: ${user.studentId})`;
+                                targetSelect.appendChild(option);
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载用户列表失败:', error);
+                    addMessage('系统', '加载用户列表失败', 'system');
+                });
+        }
+        
+                 // 加载群组列表
+        function loadGroupList() {
+            fetch('http://localhost:8080/api/chat/groups')
+                .then(response => response.json())
+                .then(data => {
+                    const targetSelect = document.getElementById('targetGroup');
+                    targetSelect.innerHTML = '<option value="">选择群组</option>';
+                    
+                    if (data.code === 200 && data.data) {
+                        data.data.forEach(groupId => {
+                            const option = document.createElement('option');
+                            option.value = groupId;
+                            option.textContent = groupId;
+                            targetSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载群组列表失败:', error);
+                    addMessage('系统', '加载群组列表失败', 'system');
+                });
+        }
+        
+        // 加载连接用户列表
+        function loadConnectUserList() {
+            fetch('http://localhost:8080/api/chat/users')
+                .then(response => response.json())
+                .then(data => {
+                    const userSelect = document.getElementById('userSelect');
+                    userSelect.innerHTML = '<option value="">选择用户身份</option>';
+                    
+                    if (data.code === 200 && data.data) {
+                        data.data.forEach(user => {
+                            const option = document.createElement('option');
+                            // 使用 "id|name" 格式存储用户信息
+                            const userName = (user.firstName || '') + (user.lastName || '') || `用户${user.studentId}`;
+                            option.value = `${user.studentId}|${userName}`;
+                            option.textContent = `${userName} (ID: ${user.studentId})`;
+                            userSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载用户列表失败:', error);
+                    alert('加载用户列表失败，请检查服务器连接');
+                });
         }
     </script>
 </body>

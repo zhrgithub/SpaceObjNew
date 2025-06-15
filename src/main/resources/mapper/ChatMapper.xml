@@ -67,4 +67,11 @@
         ORDER BY gm.joined_at
     </select>
     
+    <!-- 获取所有群组ID列表 -->
+    <select id="getAllGroups" resultType="String">
+        SELECT DISTINCT group_id 
+        FROM group_members 
+        ORDER BY group_id
+    </select>
+    
 </mapper> 

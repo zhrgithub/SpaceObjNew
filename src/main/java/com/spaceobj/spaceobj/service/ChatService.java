@@ -121,4 +121,14 @@ public class ChatService {
         
         return messages;
     }
+    
+    // 获取所有群组ID列表
+    public List<String> getAllGroups() {
+        return chatMapper.getAllGroups();
+    }
+    
+    // 获取所有用户列表（用于私聊选择）
+    public List<Student> getAllUsers() {
+        return studentMapper.findAll();
+    }
 } 

@@ -33,4 +33,7 @@ public interface ChatMapper {
     List<String> getUserGroups(@Param("studentId") Integer studentId);
     
     List<GroupMember> getGroupMembers(@Param("groupId") String groupId);
+    
+    // 获取所有群组ID列表
+    List<String> getAllGroups();
 } 
