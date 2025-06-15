@@ -16,22 +16,61 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * WebSocket聊天处理器
+ * 
+ * 负责处理WebSocket连接和聊天消息的核心类
+ * 支持私聊、群聊、历史记录等功能
+ * 
+ * @author SpaceObj Team
+ * @version 1.0
+ */
 @Slf4j
 @Component
 public class SimpleChatHandler extends TextWebSocketHandler {
     
+    /**
+     * 聊天服务层，处理消息存储和查询
+     */
     @Autowired
-    private ChatService chatService;  // 注入Service层
+    private ChatService chatService;
     
-    // 在线用户 Map<studentId, WebSocketSession>
+    /**
+     * 在线用户映射表
+     * Key: 学生ID (Integer)
+     * Value: WebSocket会话 (WebSocketSession)
+     * 用于快速查找在线用户的WebSocket连接
+     */
     private final Map<Integer, WebSocketSession> onlineUsers = new ConcurrentHashMap<>();
     
-    // 群成员 Map<groupId, Set<studentId>>
+    /**
+     * 群组成员映射表
+     * Key: 群组ID (String)
+     * Value: 群组成员ID集合 (Set<Integer>)
+     * 用于管理群组成员关系和消息转发
+     */
     private final Map<String, Set<Integer>> groupMembers = new ConcurrentHashMap<>();
     
-    // 记录已经发送过私聊历史的对话 Map<studentId, Set<targetId>>
+    /**
+     * 私聊历史记录发送状态跟踪
+     * Key: 发送者ID (Integer)
+     * Value: 已发送过历史记录的目标用户ID集合 (Set<Integer>)
+     * 用于避免重复发送私聊历史记录
+     */
     private final Map<Integer, Set<Integer>> privateChatHistorySent = new ConcurrentHashMap<>();
     
+    /**
+     * WebSocket连接建立后的处理
+     * 
+     * 当客户端成功建立WebSocket连接时调用此方法
+     * 主要功能：
+     * 1. 从URL参数中提取学生ID
+     * 2. 将用户添加到在线用户列表
+     * 3. 加载用户已加入的群组信息
+     * 4. 发送连接成功确认消息
+     * 
+     * @param session WebSocket会话对象
+     */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         try {
@@ -42,12 +81,13 @@ public class SimpleChatHandler extends TextWebSocketHandler {
                 return;
             }
             
+            // 将用户添加到在线用户列表
             onlineUsers.put(studentId, session);
             
             // 从数据库加载用户已加入的群组
             loadUserGroups(studentId);
             
-            // 发送连接确认
+            // 发送连接确认消息
             sendToUser(session, new JSONObject()
                 .fluentPut("type", "CONNECT_SUCCESS")
                 .fluentPut("studentId", studentId));
@@ -62,12 +102,28 @@ public class SimpleChatHandler extends TextWebSocketHandler {
         }
     }
     
+    /**
+     * 处理接收到的文本消息
+     * 
+     * 解析客户端发送的JSON消息，根据消息类型分发到对应的处理方法
+     * 支持的消息类型：
+     * - CONNECT: 连接确认
+     * - PRIVATE_MESSAGE: 私聊消息
+     * - GROUP_MESSAGE: 群聊消息
+     * - JOIN_GROUP: 加入群组
+     * - LEAVE_GROUP: 离开群组
+     * 
+     * @param session WebSocket会话对象
+     * @param message 接收到的文本消息
+     */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         try {
+            // 解析JSON消息
             JSONObject json = JSON.parseObject(message.getPayload());
             String type = json.getString("type");
             
+            // 根据消息类型分发处理
             switch (type) {
                 case "CONNECT":
                     handleConnect(session, json);

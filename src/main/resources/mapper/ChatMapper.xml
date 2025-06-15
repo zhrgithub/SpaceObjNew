@@ -2,15 +2,37 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
+<!--
+    聊天数据访问层映射文件
+    
+    提供聊天相关的SQL映射，包括：
+    - 消息的增删改查操作
+    - 群组成员管理操作
+    - 历史记录查询操作
+    
+    @author SpaceObj Team
+    @version 1.0
+-->
 <mapper namespace="com.spaceobj.spaceobj.mapper.ChatMapper">
     
-    <!-- 插入消息 -->
+    <!-- ==================== 消息相关操作 ==================== -->
+    
+    <!-- 
+        插入聊天消息
+        将新的聊天消息保存到chat_messages表中
+        支持私聊和群聊两种消息类型
+    -->
     <insert id="insertMessage" parameterType="com.spaceobj.spaceobj.pojo.ChatMessage">
         INSERT INTO chat_messages (message_type, sender_id, target_id, group_id, content, sent_at)
         VALUES (#{messageType}, #{senderId}, #{targetId}, #{groupId}, #{content}, #{sentAt})
     </insert>
     
-    <!-- 查询私聊消息 -->
+    <!-- 
+        查询私聊消息
+        获取两个用户之间的私聊记录，支持分页
+        同时关联查询发送者姓名信息
+        结果按发送时间倒序排列（最新的在前）
+    -->
     <select id="getPrivateMessages" resultType="com.spaceobj.spaceobj.pojo.ChatMessage">
         SELECT m.*, CONCAT(COALESCE(s.first_name, ''), COALESCE(s.last_name, '')) as senderName
         FROM chat_messages m
@@ -22,7 +44,12 @@
         LIMIT #{limit} OFFSET #{offset}
     </select>
     
-    <!-- 查询群聊消息 -->
+    <!-- 
+        查询群聊消息
+        获取指定群组的聊天记录，支持分页
+        同时关联查询发送者姓名信息
+        结果按发送时间倒序排列（最新的在前）
+    -->
     <select id="getGroupMessages" resultType="com.spaceobj.spaceobj.pojo.ChatMessage">
         SELECT m.*, CONCAT(COALESCE(s.first_name, ''), COALESCE(s.last_name, '')) as senderName
         FROM chat_messages m
@@ -32,33 +59,54 @@
         LIMIT #{limit} OFFSET #{offset}
     </select>
     
-    <!-- 插入群成员 -->
+    <!-- ==================== 群组成员管理操作 ==================== -->
+    
+    <!-- 
+        插入群组成员
+        将新成员添加到group_members表中
+        记录加入时间用于后续排序和统计
+    -->
     <insert id="insertGroupMember" parameterType="com.spaceobj.spaceobj.pojo.GroupMember">
         INSERT INTO group_members (group_id, student_id, joined_at)
         VALUES (#{groupId}, #{studentId}, #{joinedAt})
     </insert>
     
-    <!-- 删除群成员 -->
+    <!-- 
+        删除群组成员
+        从group_members表中移除指定的群组成员关系
+    -->
     <delete id="deleteGroupMember">
         DELETE FROM group_members 
         WHERE group_id = #{groupId} AND student_id = #{studentId}
     </delete>
     
-    <!-- 检查是否是群成员 -->
+    <!-- 
+        检查用户是否为群组成员
+        通过统计记录数量判断用户是否已加入指定群组
+        返回boolean类型结果
+    -->
     <select id="isGroupMember" resultType="boolean">
         SELECT COUNT(*) > 0 
         FROM group_members 
         WHERE group_id = #{groupId} AND student_id = #{studentId}
     </select>
     
-    <!-- 获取用户加入的所有群组 -->
+    <!-- 
+        获取用户加入的所有群组
+        查询指定用户参与的所有群组ID列表
+    -->
     <select id="getUserGroups" resultType="String">
         SELECT group_id 
         FROM group_members 
         WHERE student_id = #{studentId}
     </select>
     
-    <!-- 获取群组成员 -->
+    <!-- 
+        获取群组成员列表
+        查询指定群组的所有成员信息
+        同时关联查询成员的姓名信息
+        按加入时间排序
+    -->
     <select id="getGroupMembers" resultType="com.spaceobj.spaceobj.pojo.GroupMember">
         SELECT gm.*, CONCAT(COALESCE(s.first_name, ''), COALESCE(s.last_name, '')) as studentName
         FROM group_members gm
@@ -67,7 +115,11 @@
         ORDER BY gm.joined_at
     </select>
     
-    <!-- 获取所有群组ID列表 -->
+    <!-- 
+        获取所有群组ID列表
+        查询系统中所有存在的群组ID
+        去重并按字母顺序排序，用于前端群组选择
+    -->
     <select id="getAllGroups" resultType="String">
         SELECT DISTINCT group_id 
         FROM group_members 
