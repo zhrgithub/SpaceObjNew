@@ -5,18 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>简化版聊天系统</title>
     <style>
+        /* 全局样式重置 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
+        /* 页面主体样式 */
         body {
             font-family: Arial, sans-serif;
             background: #f0f0f0;
             padding: 20px;
         }
         
+        /* 主容器样式 */
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -26,6 +29,7 @@
             overflow: hidden;
         }
         
+        /* 页面头部样式 */
         .header {
             background: #4CAF50;
             color: white;
@@ -33,6 +37,7 @@
             text-align: center;
         }
         
+        /* 连接状态显示区域 */
         .status {
             background: #f5f5f5;
             padding: 10px;
@@ -40,12 +45,14 @@
             border-bottom: 1px solid #ddd;
         }
         
+        /* 用户连接区域样式 */
         .connect-area {
             padding: 15px;
             background: #fafafa;
             border-bottom: 1px solid #ddd;
         }
         
+        /* 连接区域输入框样式 */
         .connect-area input {
             padding: 8px;
             margin: 5px;
@@ -53,6 +60,7 @@
             border-radius: 4px;
         }
         
+        /* 连接区域按钮样式 */
         .connect-area button {
             padding: 8px 15px;
             margin: 5px;
@@ -61,21 +69,25 @@
             cursor: pointer;
         }
         
-        .btn-primary { background: #4CAF50; color: white; }
-        .btn-secondary { background: #666; color: white; }
-        .btn-success { background: #2196F3; color: white; }
-        .btn-warning { background: #FF9800; color: white; }
+        /* 按钮颜色主题 */
+        .btn-primary { background: #4CAF50; color: white; }    /* 主要按钮 - 绿色 */
+        .btn-secondary { background: #666; color: white; }     /* 次要按钮 - 灰色 */
+        .btn-success { background: #2196F3; color: white; }    /* 成功按钮 - 蓝色 */
+        .btn-warning { background: #FF9800; color: white; }    /* 警告按钮 - 橙色 */
         
+        /* 禁用按钮样式 */
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         
+        /* 聊天主区域布局 */
         .chat-area {
             display: flex;
             height: 400px;
         }
         
+        /* 左侧边栏样式 */
         .sidebar {
             width: 200px;
             background: #f9f9f9;
@@ -83,11 +95,13 @@
             padding: 15px;
         }
         
+        /* 侧边栏标题样式 */
         .sidebar h4 {
             margin-bottom: 10px;
             color: #333;
         }
         
+        /* 侧边栏输入框和按钮样式 */
         .sidebar input, .sidebar button {
             width: 100%;
             padding: 6px;
@@ -96,16 +110,19 @@
             border-radius: 4px;
         }
         
+        /* 侧边栏按钮鼠标样式 */
         .sidebar button {
             cursor: pointer;
         }
         
+        /* 主聊天区域布局 */
         .main-chat {
             flex: 1;
             display: flex;
             flex-direction: column;
         }
         
+        /* 消息显示区域 */
         .messages {
             flex: 1;
             padding: 15px;
@@ -113,6 +130,7 @@
             background: white;
         }
         
+        /* 消息气泡基础样式 */
         .message {
             margin: 8px 0;
             padding: 10px;
@@ -123,6 +141,7 @@
             clear: both;
         }
         
+        /* 发送的消息样式 - 右侧对齐 */
         .message-sent {
             float: right;
             background: #007bff;
@@ -132,6 +151,7 @@
             border-bottom-right-radius: 4px;
         }
         
+        /* 接收的消息样式 - 左侧对齐 */
         .message-received {
             float: left;
             background: #f1f1f1;
@@ -141,24 +161,29 @@
             border-bottom-left-radius: 4px;
         }
         
+        /* 私聊发送消息样式 */
         .message-private.message-sent {
             background: #2196F3;
         }
         
+        /* 私聊接收消息样式 */
         .message-private.message-received {
             background: #e3f2fd;
             color: #333;
         }
         
+        /* 群聊发送消息样式 */
         .message-group.message-sent {
             background: #4CAF50;
         }
         
+        /* 群聊接收消息样式 */
         .message-group.message-received {
             background: #e8f5e8;
             color: #333;
         }
         
+        /* 系统消息样式 - 居中显示 */
         .message-system {
             background: #f5f5f5;
             border-left: 4px solid #666;
@@ -169,6 +194,7 @@
             text-align: center;
         }
         
+        /* 历史消息样式 - 半透明居中显示 */
         .message-history {
             opacity: 0.8;
             background: #f9f9f9 !important;
@@ -179,25 +205,30 @@
             text-align: center;
         }
         
+        /* 历史消息时间样式 */
         .message-history .message-time {
             color: #999;
             font-size: 0.75em;
         }
         
+        /* 消息时间戳样式 */
         .message-time {
             font-size: 0.75em;
             color: rgba(255,255,255,0.8);
             margin-bottom: 5px;
         }
         
+        /* 接收消息的时间戳样式 */
         .message-received .message-time {
             color: #666;
         }
         
+        /* 消息内容样式 */
         .message-content {
             line-height: 1.4;
         }
         
+        /* 消息发送者标识样式 */
         .message-sender {
             font-size: 0.8em;
             font-weight: bold;
@@ -205,35 +236,42 @@
             opacity: 0.9;
         }
         
+        /* 清除浮动，确保消息正确排列 */
         .messages::after {
             content: "";
             display: table;
             clear: both;
         }
         
+        /* 消息输入区域 */
         .input-area {
             padding: 15px;
             background: #f9f9f9;
             border-top: 1px solid #ddd;
         }
         
+        /* 输入控制区域 */
         .input-controls {
             margin-bottom: 10px;
         }
         
+        /* 单选按钮标签样式 */
         .input-controls label {
             margin-right: 15px;
         }
         
+        /* 单选按钮样式 */
         .input-controls input[type="radio"] {
             margin-right: 5px;
         }
         
+        /* 输入框容器布局 */
         .input-box {
             display: flex;
             gap: 10px;
         }
         
+        /* 消息输入框样式 */
         .input-box input {
             flex: 1;
             padding: 10px;
@@ -241,6 +279,7 @@
             border-radius: 4px;
         }
         
+        /* 发送按钮样式 */
         .input-box button {
             padding: 10px 20px;
             border: none;
@@ -250,11 +289,13 @@
             color: white;
         }
         
+        /* 禁用发送按钮样式 */
         .input-box button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         
+        /* 目标选择输入框样式 */
         .target-input {
             width: 100px;
             padding: 8px;
@@ -263,10 +304,12 @@
             border-radius: 4px;
         }
         
+        /* 群组列表容器 */
         .group-list {
             margin-top: 10px;
         }
         
+        /* 群组列表项样式 */
         .group-item {
             display: flex;
             justify-content: space-between;
@@ -278,6 +321,7 @@
             font-size: 0.9em;
         }
         
+        /* 群组列表项中的离开按钮 */
         .group-item button {
             padding: 2px 8px;
             font-size: 0.8em;
@@ -288,6 +332,7 @@
             cursor: pointer;
         }
         
+        /* 移动端响应式设计 */
         @media (max-width: 600px) {
             .chat-area {
                 flex-direction: column;
@@ -368,16 +413,24 @@
     </div>
 
     <script>
-        let ws = null;
-        let currentUser = null;
-        let joinedGroups = new Set();
+        // ==================== 全局变量定义 ====================
+        let ws = null;                    // WebSocket连接对象
+        let currentUser = null;           // 当前登录用户信息
+        let joinedGroups = new Set();     // 已加入的群组集合
         
-        // 页面加载完成后自动加载用户列表
+        // ==================== 页面初始化事件 ====================
+        
+        /**
+         * 页面加载完成后自动加载用户列表
+         */
         document.addEventListener('DOMContentLoaded', function() {
             loadConnectUserList();
         });
         
-        // 切换聊天类型
+        /**
+         * 聊天类型切换事件监听器
+         * 当用户选择私聊或群聊时，自动加载对应的目标列表
+         */
         document.querySelectorAll('input[name="chatType"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 const isPrivate = this.value === 'private';
@@ -393,13 +446,21 @@
             });
         });
         
-        // 回车发送消息
+        /**
+         * 消息输入框回车发送事件监听器
+         */
         document.getElementById('messageInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
             }
         });
         
+        // ==================== WebSocket连接管理 ====================
+        
+        /**
+         * 建立WebSocket连接
+         * 从用户选择下拉框获取用户信息，建立WebSocket连接
+         */
         function connect() {
             const userSelect = document.getElementById('userSelect');
             const selectedValue = userSelect.value;
@@ -466,6 +527,9 @@
             }
         }
         
+        /**
+         * 断开WebSocket连接
+         */
         function disconnect() {
             if (ws) {
                 ws.close();
@@ -473,6 +537,12 @@
             }
         }
         
+        // ==================== 消息发送功能 ====================
+        
+        /**
+         * 发送消息
+         * 根据当前选择的聊天类型（私聊/群聊）发送相应的消息
+         */
         function sendMessage() {
             const content = document.getElementById('messageInput').value.trim();
             if (!content) {
@@ -515,6 +585,12 @@
             document.getElementById('messageInput').value = '';
         }
         
+        // ==================== 群组管理功能 ====================
+        
+        /**
+         * 加入群组
+         * 从输入框获取群组ID，发送加入群组请求
+         */
         function joinGroup() {
             const groupId = document.getElementById('groupId').value.trim();
             if (!groupId) {
@@ -529,6 +605,10 @@
             });
         }
         
+        /**
+         * 离开群组
+         * 从输入框获取群组ID，发送离开群组请求
+         */
         function leaveGroup() {
             const groupId = document.getElementById('groupId').value.trim();
             if (!groupId) {
@@ -543,6 +623,10 @@
             });
         }
         
+        /**
+         * 发送WebSocket消息
+         * @param {Object} message - 要发送的消息对象
+         */
         function sendWsMessage(message) {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify(message));
@@ -551,6 +635,12 @@
             }
         }
         
+        // ==================== 消息处理功能 ====================
+        
+        /**
+         * 处理接收到的WebSocket消息
+         * @param {Object} message - 接收到的消息对象
+         */
         function handleMessage(message) {
             switch (message.type) {
                 case 'CONNECT_SUCCESS':
@@ -634,6 +724,15 @@
             }
         }
         
+        // ==================== 消息显示功能 ====================
+        
+        /**
+         * 添加消息到聊天窗口
+         * @param {string} sender - 发送者名称
+         * @param {string} content - 消息内容
+         * @param {string} type - 消息类型 (private/group/system)
+         * @param {boolean} isSent - 是否为当前用户发送的消息
+         */
         function addMessage(sender, content, type, isSent = false) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
@@ -665,6 +764,14 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
         
+        /**
+         * 添加历史消息到聊天窗口
+         * @param {string} sender - 发送者名称
+         * @param {string} content - 消息内容
+         * @param {string} type - 消息类型 (private/group)
+         * @param {string} timestamp - 消息时间戳
+         * @param {boolean} isSent - 是否为当前用户发送的消息
+         */
         function addHistoryMessage(sender, content, type, timestamp, isSent = false) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
@@ -680,6 +787,12 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
         
+        // ==================== UI更新功能 ====================
+        
+        /**
+         * 更新群组列表显示
+         * 更新侧边栏的群组列表和聊天目标选择框
+         */
         function updateGroupList() {
             const groupListDiv = document.getElementById('groupList');
             const targetGroupSelect = document.getElementById('targetGroup');
@@ -706,6 +819,10 @@
             });
         }
         
+        /**
+         * 离开指定群组
+         * @param {string} groupId - 要离开的群组ID
+         */
         function leaveSpecificGroup(groupId) {
             sendWsMessage({
                 type: 'LEAVE_GROUP',
@@ -714,17 +831,33 @@
             });
         }
         
+        /**
+         * 更新连接状态显示
+         * @param {string} text - 状态文本
+         */
         function updateStatus(text) {
             document.getElementById('status').textContent = text;
         }
         
+        // ==================== 工具函数 ====================
+        
+        /**
+         * HTML转义函数，防止XSS攻击
+         * @param {string} text - 需要转义的文本
+         * @returns {string} 转义后的HTML安全文本
+         */
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
         
-        // 加载用户列表
+                // ==================== 数据加载功能 ====================
+        
+        /**
+         * 加载聊天对象用户列表
+         * 从后端API获取用户列表，填充到私聊目标选择框
+         */
         function loadUserList() {
             fetch('http://localhost:8080/api/chat/users')
                 .then(response => response.json())
@@ -751,7 +884,10 @@
                 });
         }
         
-                 // 加载群组列表
+        /**
+         * 加载群组列表
+         * 从后端API获取群组列表，填充到群聊目标选择框
+         */
         function loadGroupList() {
             fetch('http://localhost:8080/api/chat/groups')
                 .then(response => response.json())
@@ -774,7 +910,10 @@
                 });
         }
         
-        // 加载连接用户列表
+        /**
+         * 加载连接用户列表
+         * 从后端API获取用户列表，填充到用户身份选择框
+         */
         function loadConnectUserList() {
             fetch('http://localhost:8080/api/chat/users')
                 .then(response => response.json())
