@@ -32,7 +32,7 @@
             AND (first_name LIKE CONCAT('%', #{name}, '%') OR last_name LIKE CONCAT('%', #{name}, '%'))
         </if>
         <if test="age != null">
-            AND EXTRACT(YEAR FROM age(birthdate)) = #{age}
+            AND TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) = #{age}
         </if>
     </select>
 
