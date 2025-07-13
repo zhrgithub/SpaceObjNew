@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 定义日志文件的存储地址 -->
+    <property name="LOG_HOME" value="./logs" />
+    <property name="APP_NAME" value="SpaceObj" />
+    
+    <!-- 控制台输出 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    
+    <!-- 文件输出 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    
+    <!-- Logstash输出 -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>127.0.0.1:5001</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>true</includeContext>
+            <includeMdc>true</includeMdc>
+            <customFields>{"app_name":"${APP_NAME}"}</customFields>
+        </encoder>
+        
+        <!-- 连接重试配置 -->
+        <connectionTimeout>5000</connectionTimeout>
+        <reconnectionDelay>1000</reconnectionDelay>
+        <secondaryConnectionTTL>300000</secondaryConnectionTTL>
+        
+        <!-- 异步处理配置 -->
+        <keepAliveDuration>300000</keepAliveDuration>
+        <writeTimeout>5000</writeTimeout>
+        
+        <!-- 错误处理 -->
+        <ringBufferSize>16384</ringBufferSize>
+    </appender>
+    
+    <!-- 优化的异步Logstash输出 -->
+    <appender name="ASYNC_LOGSTASH" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>20</discardingThreshold>
+        <queueSize>2048</queueSize>
+        <maxFlushTime>2000</maxFlushTime>
+        <includeCallerData>false</includeCallerData>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="LOGSTASH"/>
+    </appender>
+    
+    <!-- 应用包的日志级别 - 使用additivity=true让日志传播到root -->
+    <logger name="com.spaceobj.spaceobj" level="DEBUG" additivity="true"/>
+    
+    <!-- WebSocket相关日志 -->
+    <logger name="org.springframework.web.socket" level="DEBUG" additivity="true"/>
+    
+    <!-- SQL执行日志 -->
+    <logger name="org.mybatis" level="DEBUG" additivity="true"/>
+    
+    <!-- Spring框架日志控制 -->
+    <logger name="org.springframework" level="INFO" additivity="true"/>
+    
+    <!-- Hibernate日志控制 -->
+    <logger name="org.hibernate" level="WARN" additivity="true"/>
+    
+    <!-- 避免过多的框架日志 -->
+    <logger name="org.apache" level="WARN" additivity="true"/>
+    <logger name="com.zaxxer.hikari" level="WARN" additivity="true"/>
+    <logger name="org.mybatis.spring" level="WARN" additivity="true"/>
+    
+    <!-- 如果Logstash连接失败，减少错误日志 -->
+    <logger name="net.logstash.logback" level="WARN" additivity="true"/>
+    
+    <!-- 根日志器 - 统一处理所有日志输出 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ASYNC_LOGSTASH"/>
+    </root>
+</configuration> 

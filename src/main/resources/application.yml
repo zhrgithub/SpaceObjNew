@@ -2,22 +2,35 @@ spring:
   application:
     name: SpaceObj
   datasource:
-    url: jdbc:mysql://localhost:3307/school?useSSL=false&serverTimezone=UTC&characterEncoding=utf8  # URL连接
+    url: jdbc:mysql://localhost:3307/school?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&allowPublicKeyRetrieval=true&useUnicode=true&autoReconnect=true&failOverReadOnly=false&rewriteBatchedStatements=true  # URL连接
     username: root                                     #账号
     password: root                                     # 密码
     driver-class-name: com.mysql.cj.jdbc.Driver       # 连接引擎
+    hikari:
+      maximum-pool-size: 10                            # 最大连接池数量
+      minimum-idle: 5                                  # 最小空闲连接数
+      connection-timeout: 30000                        # 连接超时时间(ms)
+      idle-timeout: 600000                             # 空闲连接超时时间(ms)
+      max-lifetime: 1800000                            # 连接最大生命周期(ms)
+      connection-test-query: SELECT 1                  # 测试连接查询
 mybatis:
     mapper-locations: classpath:/mappers/*.xml,classpath:/mapper/*.xml   # MyBatis XML 映射文件的位置
     type-aliases-package: com.spaceobj.spaceobj.pojo    # 实体类所在的包路径
     configuration:
       map-underscore-to-camel-case: true            # 支持驼峰命名转换
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # SQL日志输出
+      cache-enabled: true                           # 启用二级缓存
+      lazy-loading-enabled: true                    # 启用延迟加载
 server:
   port: 8080
 management:
   endpoints:
     web:
       exposure:
-            include: beans
+        include: beans,health,info
+  endpoint:
+    health:
+      show-details: always
 
 # SpringDoc OpenAPI 3 配置
 springdoc:
@@ -29,8 +42,4 @@ springdoc:
     operations-sorter: alpha
   packages-to-scan: com.spaceobj.spaceobj.controller
 
-# 日志配置
-logging:
-  level:
-    com.spaceobj.spaceobj: DEBUG
-    org.springframework.web.socket: DEBUG
+# 日志配置现在由logback.xml管理
